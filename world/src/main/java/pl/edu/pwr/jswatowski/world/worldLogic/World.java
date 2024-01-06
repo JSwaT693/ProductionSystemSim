@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class World extends SocketServerBase {
     private final List<MachineModel> machines = new ArrayList<>();
@@ -34,6 +38,7 @@ public class World extends SocketServerBase {
     public static void main( String[] args ) throws IOException {
         World world = new World();
         world.startServer(5000);
+        world.startGrowingProcess();
     }
 
     public void register(String host, int port, MachineType role) throws IOException {
@@ -46,10 +51,11 @@ public class World extends SocketServerBase {
         System.out.println("Registered " + role + " from: " + host + ":" + port);
     }
 
-    public void unregister(int id) throws IOException {
+    public synchronized void unregister(int id) throws IOException {
         var machine = getMachine(id);
         if (machine != null) {
             machines.remove(machine);
+            board[machine.getX()][machine.getY()].setMachine(null);
             var message = "unregister";
             sendMessage(machine.getIp(), machine.getPort(), message);
         }
@@ -78,23 +84,13 @@ public class World extends SocketServerBase {
             if (machine.getDirection() == Directions.RIGHT) {
                 //Normalne poruszanie sie w prawo
                 if (x < 4 && !board[x + 1][y].isMachine()) {
-                    machine.setX(x + 1);
-                    board[x][y].setMachine(null);
-                    board[x + 1][y].setMachine(machine);
-                    var message = "move," + board[x + 1][y].getPlants();
-                    sendMessage(machine.getIp(), machine.getPort(), message);
-                    System.out.println("Move to: " + machine.getX() + ", " + machine.getY());
+                    moveMachine(machine, x + 1, y);
                     return;
                 }
             } else {
                 //Normalne poruszanie sie w lewo
                 if (x > 0 && !board[x - 1][y].isMachine()) {
-                    machine.setX(x - 1);
-                    board[x][y].setMachine(null);
-                    board[x - 1][y].setMachine(machine);
-                    var message = "move," + board[x - 1][y].getPlants();
-                    sendMessage(machine.getIp(), machine.getPort(), message);
-                    System.out.println("Move to: " + machine.getX() + ", " + machine.getY());
+                    moveMachine(machine, x - 1, y);
                     return;
                 }
             }
@@ -102,20 +98,12 @@ public class World extends SocketServerBase {
             //Analogicznie do Seedera tylko kierunki to gora i dol
             if (machine.getDirection() == Directions.UP) {
                 if (y < 4 && !board[x][y + 1].isMachine()) {
-                    machine.setY(y + 1);
-                    board[x][y].setMachine(null);
-                    board[x][y + 1].setMachine(machine);
-                    var message = "move," + board[x][y + 1].getPlants();
-                    sendMessage(machine.getIp(), machine.getPort(), message);
+                    moveMachine(machine, x, y + 1);
                     return;
                 }
             } else {
                 if (y > 0 && !board[x][y - 1].isMachine()) {
-                    machine.setY(y - 1);
-                    board[x][y].setMachine(null);
-                    board[x][y - 1].setMachine(machine);
-                    var message = "move," + board[x][y - 1].getPlants();
-                    sendMessage(machine.getIp(), machine.getPort(), message);
+                    moveMachine(machine, x, y - 1);
                     return;
                 }
             }
@@ -124,14 +112,26 @@ public class World extends SocketServerBase {
         sendMessage(machine.getIp(), machine.getPort(), message);
     }
 
-    public void seed(int id) {
+    private synchronized void moveMachine(MachineModel machine, int newX, int newY) {
+        var x = machine.getX();
+        var y = machine.getY();
+        machine.setX(newX);
+        machine.setY(newY);
+        board[x][y].setMachine(null);
+        board[newX][newY].setMachine(machine);
+        var message = "move," + board[newX][newY].getPlants();
+        sendMessage(machine.getIp(), machine.getPort(), message);
+        System.out.println("Move to: " + newX + ", " + newY);
+    }
+
+    public synchronized void seed(int id) {
         var seeder = getMachine(id);
         board[seeder.getX()][seeder.getY()].seedPlant();
         var message = "seed,";
         sendMessage(seeder.getIp(), seeder.getPort(), message);
     }
 
-    public void harvest(int id) {
+    public synchronized void harvest(int id) {
         var harvester = getMachine(id);
         board[harvester.getX()][harvester.getY()].harvestPlants();
         var message = "harvest,";
@@ -178,4 +178,18 @@ public class World extends SocketServerBase {
                 .findAny()
                 .orElse(null);
     }
+
+    public void startGrowingProcess() {
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.scheduleAtFixedRate(new Runnable() {
+            @Override  public synchronized void run() {
+                for (Field[] fields : board) {
+                    for (Field field : fields) {
+                        field.grow();
+                    }
+                }
+            }
+        },0, 5, TimeUnit.SECONDS);
+    }
 }
+

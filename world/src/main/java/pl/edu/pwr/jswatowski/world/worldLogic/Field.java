@@ -8,7 +8,9 @@ public class Field {
     private final List<Integer> plants = new ArrayList<>();
 
     void seedPlant() {
-        plants.add(1);
+        if (plants.size() < 6) {
+            plants.add(1);
+        }
     }
 
     void harvestPlants() {
