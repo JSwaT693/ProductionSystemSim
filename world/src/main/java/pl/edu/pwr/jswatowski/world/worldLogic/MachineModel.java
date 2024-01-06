@@ -17,9 +17,9 @@ public class MachineModel {
         this.port = port;
         this.role = role;
         if (role == MachineType.SEEDER) {
-            direction = Directions.DOWN;
-        } else {
             direction = Directions.RIGHT;
+        } else {
+            direction = Directions.UP;
         }
     }
 

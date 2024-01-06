@@ -28,9 +28,9 @@ public abstract class SocketServerBase {
                 while (serverIsWorking) {
                     try {
                         var clientSocket = serverSocket.accept();
-                        System.out.println("client accepted");
                         var br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         var message = br.readLine();
+                        System.out.println(message);
                         var messageItems = message.split(",");
                         if (messageItems.length == 0) {
                             continue;
