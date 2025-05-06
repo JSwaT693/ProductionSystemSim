@@ -1,7 +1,6 @@
 package pl.edu.pwr.jswatowski.shared;
 
 import java.io.IOException;
-import java.net.Socket;
 
 public abstract class MachineBase extends SocketServerBase {
     protected final String worldIp;

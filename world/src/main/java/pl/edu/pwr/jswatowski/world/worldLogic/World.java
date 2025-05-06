@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -16,15 +15,17 @@ public class World extends SocketServerBase {
     private int clientID = 0;
     private final Field[][] board = new Field[5][5];
 
-    public World() {
+    public World() throws IOException {
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 board[i][j] = new Field();
             }
         }
+        startServer(5000);
+        startGrowingProcess();
     }
 
-    protected void handleClient(String[] messageItems) throws IOException {
+    protected void handleClient(String[] messageItems) {
         switch (messageItems[0]) {
             case "register" ->
                     register(messageItems[1], Integer.parseInt(messageItems[2]), MachineType.valueOf(messageItems[3].toUpperCase()));
@@ -35,13 +36,7 @@ public class World extends SocketServerBase {
         }
     }
 
-    public static void main( String[] args ) throws IOException {
-        World world = new World();
-        world.startServer(5000);
-        world.startGrowingProcess();
-    }
-
-    public void register(String host, int port, MachineType role) throws IOException {
+    public void register(String host, int port, MachineType role) {
         var machine = new MachineModel(++clientID, host, port, role);
         machines.add(machine);
         var message = "register," + machine.getId();
@@ -51,7 +46,7 @@ public class World extends SocketServerBase {
         System.out.println("Registered " + role + " from: " + host + ":" + port);
     }
 
-    public synchronized void unregister(int id) throws IOException {
+    public synchronized void unregister(int id) {
         var machine = getMachine(id);
         if (machine != null) {
             machines.remove(machine);
@@ -143,10 +138,13 @@ public class World extends SocketServerBase {
         var x = -1;
         var y = -1;
         if (machine.getRole().equals(MachineType.SEEDER)) {
-            var seedersY = machines.stream()
-                    .filter(item -> item.getRole().equals(MachineType.SEEDER))
-                    .map(MachineModel::getY)
+            var seeders = machines.stream()
+                    .filter(item -> item.getRole().equals((MachineType.SEEDER)))
                     .toList();
+            var seedersY = new ArrayList<Integer>();
+            for (int i = 0; i < seeders.size() - 1; i++) {
+                seedersY.add(seeders.get(i).getY());
+            }
             do {
                 y = random.nextInt(0, 5);
                 x = random.nextInt(0, 5);
@@ -155,10 +153,13 @@ public class World extends SocketServerBase {
             machine.setX(x);
             board[x][y].setMachine(machine);
         } else {
-            var harvestersX = machines.stream()
-                    .filter(item -> item.getRole().equals(MachineType.HARVESTER))
-                    .map(MachineModel::getY)
+            var harvesters = machines.stream()
+                    .filter(item -> item.getRole().equals((MachineType.HARVESTER)))
                     .toList();
+            var harvestersX = new ArrayList<Integer>();
+            for (int i = 0; i < harvesters.size() - 1; i++) {
+                harvestersX.add(harvesters.get(i).getX());
+            }
             do {
                 y = random.nextInt(0, 5);
                 x = random.nextInt(0, 5);
@@ -190,6 +191,10 @@ public class World extends SocketServerBase {
                 }
             }
         },0, 5, TimeUnit.SECONDS);
+    }
+
+    public Field[][] getBoard() {
+        return board;
     }
 }
 

@@ -40,7 +40,7 @@ public abstract class SocketServerBase {
                 }
                 System.out.println("Server Thread finished");
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println("Server stopped. " + e.getMessage());
             }
         };
         serverThread = new Thread(thread);
@@ -61,7 +61,7 @@ public abstract class SocketServerBase {
             PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
             pw.println(message);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Message hasnt been sent. " + e.getMessage());
         }
     }
 

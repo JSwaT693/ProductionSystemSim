@@ -20,7 +20,7 @@ public class HarvesterGUI extends JFrame {
     }
 
     private void run() {
-        setTitle("Seeder");
+        setTitle("Harvester");
         setContentPane(panel);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(300, 270);

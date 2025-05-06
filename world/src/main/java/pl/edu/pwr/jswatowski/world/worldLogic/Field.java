@@ -36,4 +36,8 @@ public class Field {
     public void grow() {
         plants.replaceAll(plant -> plant + 1);
     }
+
+    public boolean hasPlants() {
+        return !plants.isEmpty();
+    }
 }

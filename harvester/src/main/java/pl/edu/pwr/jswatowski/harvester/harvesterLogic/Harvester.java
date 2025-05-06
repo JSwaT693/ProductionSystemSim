@@ -4,8 +4,6 @@ import pl.edu.pwr.jswatowski.shared.MachineBase;
 import pl.edu.pwr.jswatowski.shared.MachineType;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 public class Harvester extends MachineBase {
     public Harvester(String worldIp, int worldPort, int serverPort) {
